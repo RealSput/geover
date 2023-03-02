@@ -1,0 +1,327 @@
+args_parser = (input: @string){
+    return input.replace(r"[\s\r\n\t]+"," ")/*.trim()*/.split(" ").filter(v => !v.is_empty())
+}
+
+join = (array: @array, joiner: @string){
+    let out = ''
+    for i in 0..array.length {
+        if i > 0 {out += joiner}
+        out += @string(array[i])
+    }
+    return out
+}
+
+parser = (input: @string){
+    if input.replace(r"[\r\n]",'').length == 0 {
+        return [false,null,null,null,null]
+    }
+
+    let full_content = input.replace(r"\r",'').trim()
+    let full_send = full_content.split('>')
+    let content = full_send.shift().trim()
+
+    let args = args_parser(content)
+    let send = args_parser(join(full_send,'>'))
+
+    valid = args.length > 0
+
+    let cmd = args.shift().lowercase() if valid else null
+
+    if valid {
+        content = content + " "
+        content = content.substr(cmd.length, content.length).trim()
+    }
+
+    return {
+        valid,
+        cmd,
+        args,
+        content,
+        send
+    }
+}
+
+let slice = (str, beg, end) {
+	let res = [];
+	let it = 0;
+	let backwards_it = str.length * -1
+	for i in str {
+		if (it >= beg && backwards_it < end) {
+			$.print(i)
+		}
+		it++;
+		backwards_it++;
+	}
+}
+
+// no way krnl from roblox
+let krnl_running = true;
+let krnl = {
+    commands: {},
+    createCommands: (self, e) {
+        for command in e {
+            self.commands[command[0]] = command[1]
+        }
+    },
+    init: (self, msg) {
+        $.print(msg)
+        self.prompt()
+    },
+	stop: () {
+		krnl_running = false;
+	},
+    setCommand: (self, c, f) {
+        self.commands[c] = f
+    },
+    prompt: (self) {
+        while krnl_running {
+            let cmd = $.get_input("$ ")
+            let old_cmd = cmd
+            cmd = cmd.trim("\r").split(" ")[0]
+            if cmd.trim("\r") in self.commands {
+                self.commands['{}'.fmt([cmd.trim("\r")])](old_cmd.trim("\r"))
+            } else {
+                $.print("KRNL error: " + cmd.trim("\r") + ": command not found.")
+            }
+        }
+    },
+    parse: (e) {
+        return parser(e)
+    }
+}
+
+TAB = "  ";
+op = {
+    '"': '"',
+    '[': ']',
+    '{': '}'
+}
+DIGITS = "0123456789"
+let stack = []
+NUMBER_REG = @regex::new("^-?[0-9]+.?[0-9]*$")
+
+@array::last = (self) {
+    if (self.length == 0) {return null}
+    return self[self.length - 1]
+}
+
+type @JSON
+impl @JSON {
+    stringify: (val: @string | @bool | @array | @dictionary | @number | @NULL, tabs: @number = 0, last:@bool=false, tabN:@number= 0) {
+        return match val {
+            @string: (TAB * tabs) + "\"{}\"".fmt(val),
+            @number: (TAB * tabs) + "{}".fmt(val),
+            @NULL: (TAB * tabs) + "{}".fmt("null"),
+            @bool: (TAB * tabs) + "{}".fmt(val),
+            @array: (){
+                let temp = (TAB * tabs) + "[\n"
+                let tabCount = tabN if tabs < tabN else tabs
+                for i in 0..val.length {
+                temp += @JSON::stringify(val[i], tabCount + 2, i == val.length - 1) + ("\n" if i == val.length - 1 else ",\n")
+                }
+                return temp + (TAB * ((tabCount + 1) if tabs < tabN else tabCount)) + "]"
+            }(),
+            @dictionary: (){
+                let temp = (TAB * tabs) + "{\n"
+                let keys = val.keys()
+                let values = val.values()
+                let tabCount = tabN if tabs < tabN else tabs
+                for i in 0..values.length {
+                    let val = values[i]
+                    let key = keys[i]
+                    temp += (TAB * (tabCount + 1)) + "\"{}\": ".fmt(keys[i]) + @JSON::stringify(values[i], 0, i == values.length - 1, tabs + 1) + ("\n" if i == values.length - 1 else ",\n")
+                }
+                return temp + (TAB * tabCount) + "}"
+            }()
+        }
+    },
+    parse: (str: @string) {
+        let string = str
+        string = string.trim(tokens = [' ', ','])
+        if (string.length == 0) {return ""}
+        if (NUMBER_REG.matches(string)) {
+            return string as @number
+        }
+        return match string[0] {
+            =="\"": string.substr(1, string.length - 1),
+            =="[": @JSON::parseArray(string),
+            =="{": @JSON::parseObject(string),
+            =="t": true,
+            =="f": false,
+            =="u"||=="n": null,
+            else: ""
+        }
+    },
+    parseArray: (str: @string) {
+        let lastComma = 0
+        let output = []
+        if (str.length < 3) {return output}
+        let string = slice(str, 2, str.length - 1)
+        for i in 0..string.length {
+            let char = string[i]
+            if (stack.last() == "\\") {
+                stack.pop()
+                continue
+            } else if (char == "\\") {
+                stack.push("\\")
+            }
+            
+            if (stack.last() == char && (char == "\"" || stack.last() != "\"")) {
+                stack.pop()
+            } else if (char in op.keys() && stack.last() != "\"") {
+                stack.push(op[char])
+            }
+            
+            if (stack.length == 0 && (char == "," || i == string.length - 1)) {
+                output.push(@JSON::parse(string.substr(lastComma, i + 1)))
+                lastComma = i + 1
+            }
+        }
+        return output
+    },
+    parseObject: (str: @string) {
+        let start = 0
+        let output = {}
+        if (str.length < 3) {return output}
+        let string = str.trim(tokens=[" ", "{", "}"])
+        let key = []
+        let val = []
+        for i in 0..string.length {
+            let char = string[i]
+            if (stack.last() == "\\") {
+                stack.pop()
+                continue
+            } else if (char == "\\") {
+                stack.push("\\")
+            }
+    
+            if (stack.last() == char && (char == "\"" || stack.last() != "\"")) {
+                stack.pop()
+            } else if (char in op.keys() && stack.last() != "\"") {
+                stack.push(op[char])
+            }
+
+            if (stack.length == 0) {
+                if (char == ":") {
+                    if (key.length > 0) {
+                        key.pop()
+                    }
+                    key.push(@JSON::parse(string.substr(start - 1, i)))
+                    start = i + 2
+                } else if (char == "," || i == string.length - 1 ) {
+                    if (val.length > 0) {
+                        val.pop()
+                    }
+                    val.push(@JSON::parse(string.substr(start - 1, i + 1)))
+                    start = i + 1
+                    output.set(key.last(), val.last())
+                }
+            }
+        }
+        return output
+    }
+}
+let lvlstr2arr = (string) {
+	let objs = [];
+	let spl = string.split(';');
+	spl.pop()
+	for x in spl {
+		let object = obj {};
+		splitted = x.split(",")
+		for i in 0..(splitted.length/2) {
+			offset = i * 2
+			$.edit_obj(object, splitted[offset] as @number, splitted[offset + 1])
+		}
+		objs.push(object);
+	}
+	return objs
+}
+let dictToQuery = (dict: @dictionary) {
+    let ci = 0;
+    let args = [];
+    for i in dict {
+        if (ci == 0) {
+            args.push('?' + i[0] + '=' + i[1]);
+        } else {
+            args.push('&' + i[0] + '=' + i[1]);
+        }
+        ci++;
+    }
+    return args.join('')
+}
+let input = (c) => $.get_input(c).trim('\r')
+let setClient = (url) { 
+	let url_ = url;
+	return (command, query, body) {  
+		return $.http_request('get' if command == 'fetch' else 'post', url_ + '/api/' + command + dictToQuery(query), { 'Content-Type': 'application/json' }, @JSON::stringify(body)).text
+	}
+};
+
+let settings = {
+	username: input('What is your username? (or, which one would you like to create?): '),
+	password: input('What is your password? (or, which one would you like to use?): '),
+	client: input('What is the URL of the Geover server? ')
+}
+
+let confirm = () {
+	let conf = input('WARNING: this will exit out of the program in order to write to the level. Continue? (Y/N) ');
+	if (conf == 'Y' || conf == 'y') {
+		return true;
+	}
+	return false;
+};
+let geover = setClient(settings.client);
+krnl.createCommands({
+    init: (args) {
+        let args = krnl.parse(args)
+        let res = geover('init', {}, {
+			username: settings.username,
+			password: settings.password,
+			repo: args.args[0]
+		})
+		res = @JSON::parse(res);
+		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
+    }, push: (args) {
+        let args = krnl.parse(args)
+		let usrep = args.args[0].split('/')
+		$.print(usrep)
+        let res = geover('push', {
+			username: usrep[0],
+			password: settings.password,
+			repo: usrep[1]
+		}, { level: level.objects.map(x => x as @string).join('')})
+		res = @JSON::parse(res);
+		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
+    }, fetch: (args) {
+	    let args = krnl.parse(args)
+		$.print(args)
+		let confirmed = confirm()
+		$.print(confirmed)
+		if (confirmed) {
+			let res = geover('fetch', { repo: args.args[0] }, {})
+			$.print(res)
+			res = @JSON::parse(res);
+			if (!res.success) {
+				$.print('Failure: ' + res.reason);
+				return;
+			}
+			let last = res.reason[res.reason.length - 1];
+			last = lvlstr2arr(last)
+			for o in last {
+				$.add(o)
+			}
+		}
+	},
+	invite: (args) {
+        let args = krnl.parse(args)
+        let res = geover('invite', {
+			username: settings.username,
+			password: settings.password,
+			repo: args.args[0],
+			receiver: args.args[1]
+		}, {})
+		res = @JSON::parse(res);
+		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
+    }
+})
+krnl.init("\nWelcome to the Geover CLI! This is a tool to collaborate on levels or back them up.\n")
