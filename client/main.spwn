@@ -67,9 +67,9 @@ let krnl = {
         $.print(msg)
         self.prompt()
     },
-	stop: () {
-		krnl_running = false;
-	},
+    stop: () {
+	krnl_running = false;
+    },
     setCommand: (self, c, f) {
         self.commands[c] = f
     },
