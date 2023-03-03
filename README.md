@@ -15,8 +15,10 @@ Version control tool (similar to Git), but for Geometry Dash.
 - `init repo_name` - Initiate a repository
 - `invite username` - Invite user to your repo
 - `fetch username/repo_name` - writes repo to GD savefile
+  - NOTE: Delete all objects in level before fetching repo
 
 ## Hosting a server (for developers)
 - Clone this repo.
 - CD into `server`
 - Run `npm i && node .`
+- Arguments: '<path_name>'
