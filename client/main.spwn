@@ -280,7 +280,7 @@ krnl.createCommands({
 			repo: args.args[0]
 		})
 		res = @JSON::parse(res);
-		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
+		$.print('Success: ' + res.reason if res.success else 'Failure: ' + res.reason)
     }, push: (args) {
         let args = krnl.parse(args)
 		let usrep = args.args[0].split('/')
@@ -291,7 +291,7 @@ krnl.createCommands({
 			repo: usrep[1]
 		}, { level: level.objects.map(x => x as @string).join('')})
 		res = @JSON::parse(res);
-		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
+		$.print('Success: ' + res.reason if res.success else 'Failure: ' + res.reason)
     }, fetch: (args) {
 	    let args = krnl.parse(args)
 		let confirmed = confirm()
@@ -311,15 +311,15 @@ krnl.createCommands({
 		krnl.stop()
 	},
 	invite: (args) {
-        	let args = krnl.parse(args)
-        	let res = geover('invite', {
+        let args = krnl.parse(args)
+        let res = geover('invite', {
 			username: settings.username,
 			password: settings.password,
 			repo: args.args[0],
 			receiver: args.args[1]
 		}, {})
 		res = @JSON::parse(res);
-		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
-    	}
+		$.print('Success: ' + res.reason if res.success else 'Failure: ' + res.reason)
+    }
 })
 krnl.init("\nWelcome to the Geover CLI! This is a tool to collaborate on levels or back them up.\n")
