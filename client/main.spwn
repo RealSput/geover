@@ -67,9 +67,9 @@ let krnl = {
         $.print(msg)
         self.prompt()
     },
-    stop: () {
-	krnl_running = false;
-    },
+	stop: () {
+		krnl_running = false;
+	},
     setCommand: (self, c, f) {
         self.commands[c] = f
     },
@@ -294,27 +294,25 @@ krnl.createCommands({
 		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
     }, fetch: (args) {
 	    let args = krnl.parse(args)
-		$.print(args)
 		let confirmed = confirm()
-		$.print(confirmed)
 		if (confirmed) {
 			let res = geover('fetch', { repo: args.args[0] }, {})
-			$.print(res)
 			res = @JSON::parse(res);
 			if (!res.success) {
 				$.print('Failure: ' + res.reason);
 				return;
 			}
-			let last = res.reason[res.reason.length - 1];
+			let last = res.reason;
 			last = lvlstr2arr(last)
 			for o in last {
 				$.add(o)
 			}
 		}
+		krnl.stop()
 	},
 	invite: (args) {
-        let args = krnl.parse(args)
-        let res = geover('invite', {
+        	let args = krnl.parse(args)
+        	let res = geover('invite', {
 			username: settings.username,
 			password: settings.password,
 			repo: args.args[0],
@@ -322,6 +320,6 @@ krnl.createCommands({
 		}, {})
 		res = @JSON::parse(res);
 		$.print('Success: ' if res.success else 'Failure: ' + res.reason)
-    }
+    	}
 })
 krnl.init("\nWelcome to the Geover CLI! This is a tool to collaborate on levels or back them up.\n")
