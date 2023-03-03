@@ -45,10 +45,10 @@ app.post('/api/init', (req, res) => {
 app.get('/api/fetch', (req, res) => {
   let repo = req.query.repo.split('/');
   let data = JSON.parse(fs.readFileSync('levels.json'));
-
   if (data[repo[0]]) {
     if (data[repo[0]].repos[repo[1]]) {
-      res.json({ success: true, reason: data[repo[0]].repos[repo[1]].versions });
+      let vers = data[repo[0]].repos[repo[1]].versions;
+      res.json({ success: true, reason: vers[vers.length - 1] });
       fs.writeFileSync('levels.json', JSON.stringify(data));
     } else {
       res.json({ success: false, reason: 'user does not exist' });
