@@ -7,6 +7,7 @@ Version control tool (similar to Git), but for Geometry Dash.
 - Clone this repo.
 - Run `spwn build client/main.spwn --allow http_request`
 - Enter info
+- Find Geover server URL & paste it
 - Use commands listed below
 
 ## Commands
