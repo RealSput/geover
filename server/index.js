@@ -7,7 +7,7 @@ app.use(express.json());
 
 if (!fs.existsSync('levels.json')) fs.writeFileSync('levels.json', '{}');
 
-let path = process.argv[2] ? (process.argv[2].endsWith('/') ? process.argv[2] : process.argv[2]) : '/geover-api
+let path = process.argv[2] ? (process.argv[2].endsWith('/') ? process.argv[2] : process.argv[2]) : '/geover-api'
 // this is weak security, but idc considering that no one will use it anyways
 app.post(path + '/init', (req, res) => {
   let {
