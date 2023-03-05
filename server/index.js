@@ -7,9 +7,8 @@ app.use(express.json());
 
 if (!fs.existsSync('levels.json')) fs.writeFileSync('levels.json', '{}');
 
-let path = process.argv[2] ? (process.argv[2].startsWith('/') ? process.argv[2] : '/' + process.argv[2]) : '/geover-api'
 // this is weak security, but idc considering that no one will use it anyways
-app.post(path + '/init', (req, res) => {
+app.post('/api/init', (req, res) => {
   let {
     username,
     repo,
@@ -48,11 +47,14 @@ app.get('/api/fetch', (req, res) => {
   let data = JSON.parse(fs.readFileSync('levels.json'));
   if (data[repo[0]]) {
     if (data[repo[0]].repos[repo[1]]) {
-      let vers = data[repo[0]].repos[repo[1]].versions;
-      res.json({ success: true, reason: vers[vers.length - 1] });
-      fs.writeFileSync('levels.json', JSON.stringify(data));
+      if (data[repo[0]].repos[repo[1]].length !== 0) {
+        let vers = data[repo[0]].repos[repo[1]].versions;
+        res.json({ success: true, reason: vers[vers.length - 1] });
+      } else {
+        res.json({ success: false, reason: 'no versions found' });
+      }
     } else {
-      res.json({ success: false, reason: 'user does not exist' });
+      res.json({ success: false, reason: 'repo does not exist' });
       return;
     }
   } else {
@@ -62,7 +64,7 @@ app.get('/api/fetch', (req, res) => {
 })
 
 // ok here comes the part where you can actually edit repos
-app.post(path + '/push', (req, res) => {
+app.post('/api/push', (req, res) => {
   let data = JSON.parse(fs.readFileSync('levels.json'));
   let level = req.body.level;
   let { repo, username, password } = req.query;
@@ -76,11 +78,27 @@ app.post(path + '/push', (req, res) => {
   fs.writeFileSync('levels.json', JSON.stringify(data));
 });
 
-// probably the most useful feature (other than user access invite)
-// app.post('/api/revert');
+// rverert
+app.post('/api/revert', (req, res) => {
+  let data = JSON.parse(fs.readFileSync('levels.json'));
+  let { repo, username, password } = req.query;
+  let times = Math.abs(req.body.amount) * -1;
+  if (!data[username].repos[repo]) {
+    res.json({ success: false, reason: 'Repo does not exist'});
+    return;
+  }
+  if (data[username].repos[repo].contributors.indexOf(username) !== -1 || data[username].password === password) {
+    data[username].repos[repo].versions.slice(0, times);
+    res.json({ success: true, reason: 'Reverted changes' });
+  } else {
+    res.json({ success: false, reason: 'Access denied for current user' });
+    return;
+  }
+  fs.writeFileSync('levels.json', JSON.stringify(data));
+});
 
 // my favorite feature
-app.post(path + '/invite', (req, res) => {
+app.post('/api/invite', (req, res) => {
   let data = JSON.parse(fs.readFileSync('levels.json'));
   let { repo, username, password, receiver } = req.query;
 
