@@ -284,12 +284,22 @@ krnl.createCommands({
     }, push: (args) {
         let args = krnl.parse(args)
 		let usrep = args.args[0].split('/')
-		$.print(usrep)
         let res = geover('push', {
 			username: usrep[0],
 			password: settings.password,
 			repo: usrep[1]
 		}, { level: level.objects.map(x => x as @string).join('')})
+		res = @JSON::parse(res);
+		$.print('Success: ' + res.reason if res.success else 'Failure: ' + res.reason)
+    }, revert: (args) {
+        let args = krnl.parse(args)
+		let usrep = args.args[0].split('/')
+        let res = geover('revert', {
+			username: usrep[0],
+			password: settings.password,
+			repo: usrep[1]
+		}, { amount: args.args[1] as @number })
+		$.print('real')
 		res = @JSON::parse(res);
 		$.print('Success: ' + res.reason if res.success else 'Failure: ' + res.reason)
     }, fetch: (args) {
