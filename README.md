@@ -16,6 +16,8 @@ Version control tool (similar to Git), but for Geometry Dash.
 - `invite username` - Invite user to your repo
 - `fetch username/repo_name` - writes repo to GD savefile
   - NOTE: Delete all objects in level before fetching repo
+- `revert username/repo_name amount` - reverts repo versions
+  - NOTE: this is destructive and cannot be undone; undestructive revert will be implemented soon
 
 ## Hosting a server (for developers)
 - Clone this repo.
